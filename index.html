@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Song Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@magenta/music"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>AI Song Generator</h1>
+        
+        <div class="input-section">
+            <textarea id="lyrics-input" placeholder="Enter lyrics for your song (e.g., 'Hello world, this is my first song')"></textarea>
+            
+            <div class="style-selection">
+                <label for="artist-style">Artist Style:</label>
+                <select id="artist-style">
+                    <option value="hiphop">Hip Hop</option>
+                    <option value="rock">Rock</option>
+                    <option value="pop">Pop</option>
+                    <option value="electronic">Electronic</option>
+                </select>
+            </div>
+            
+            <button id="generate-btn">Generate Song</button>
+        </div>
+        
+        <div class="output-section">
+            <h2>Generated Song</h2>
+            <div id="loading" class="hidden">Generating song...</div>
+            <div id="player-container" class="hidden">
+                <audio id="audio-player" controls></audio>
+                <button id="download-btn" class="hidden">Download Song</button>
+            </div>
+            <div id="visualization-container"></div>
+        </div>
+    </div>
+
+    <script src="tensor_flow.js"></script>
+</body>
+</html>
