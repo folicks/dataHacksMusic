@@ -1,3 +1,65 @@
+# Rap Lyrics Classifier
+
+A machine learning model that classifies whether given lyrics are rap or not rap. The model is trained on a dataset of 100 songs (50 rap, 50 non-rap) fetched from Genius.com.
+
+## Features
+
+- Fetches lyrics from Genius.com using their API
+- Preprocesses and tokenizes lyrics
+- Uses a neural network to classify lyrics as rap or non-rap
+- Provides confidence scores for predictions
+
+## Requirements
+
+- Python 3.7+
+- Required packages are listed in `requirements.txt`
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/dataHacksMusic.git
+cd dataHacksMusic
+```
+
+2. Install the required packages:
+```bash
+pip install -r requirements.txt
+```
+
+3. Set up your Genius API token:
+- Get an API token from [Genius API](https://genius.com/api-clients)
+- Add your token to `fetch_genius_lyrics.py`
+
+## Usage
+
+1. To fetch new lyrics data:
+```bash
+python fetch_genius_lyrics.py
+```
+
+2. To train the model:
+```bash
+python rap_classifier.py
+```
+
+3. To test the model with lyrics:
+```bash
+python rap_classifier.py "your lyrics here"
+```
+
+## Model Architecture
+
+The model uses:
+- LSTM layers for sequence processing
+- Word embeddings for text representation
+- Dropout for regularization
+- Cross-entropy loss for training
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 # dataHacksMusic
 TODO :
 - [ ]  document the tech support
