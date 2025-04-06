@@ -4,18 +4,18 @@ import numpy as np
 import subprocess
 import json
 import random
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+# from flask_limiter import Limiter
+# from flask_limiter.util import get_remote_address
 
 app = Flask(__name__, static_folder='static', template_folder='static')
 
 
-# TODO : i should've known where to put this limiter :(
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"]
-)
+# # TODO : i should've known where to put this limiter :(
+# limiter = Limiter(
+#     app=app,
+#     key_func=get_remote_address,
+#     default_limits=["200 per day", "50 per hour"]
+# )
 
 # Sample Drake lyrics for fallback
 DRAKE_LYRICS = [
@@ -84,7 +84,7 @@ def static_files(filename):
     return send_from_directory(app.static_folder, filename)
 
 @app.route('/generate', methods=['POST'])
-@limiter.limit("10 per minute")
+# @limiter.limit("10 per minute")
 def generate():
     print("Received generate request")
     data = request.json
