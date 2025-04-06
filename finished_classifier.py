@@ -42,26 +42,39 @@ def load_large_dataset(data_dir):
     return pd.DataFrame(all_data)
 
 def preprocess_lyrics(text):
-    """Enhanced preprocessing of lyrics text"""
+    """Enhanced preprocessing of lyrics text with rap-specific features"""
     if not isinstance(text, str):
         return []
         
     # Convert to lowercase
     text = text.lower()
     
-    # Remove special characters but keep apostrophes
-    text = re.sub(r'[^a-zA-Z\s\']', '', text)
+    # Keep important punctuation that might indicate rap style
+    text = re.sub(r'[^a-zA-Z\s\'\.,!?]', '', text)
     
     # Tokenize
     tokens = word_tokenize(text)
     
-    # Remove stopwords
+    # Remove stopwords but keep some that might be important for rap
     stop_words = set(stopwords.words('english'))
-    tokens = [word for word in tokens if word not in stop_words]
+    important_words = {'yo', 'yeah', 'uh', 'ay', 'hey', 'oh', 'nah', 'yea'}
+    tokens = [word for word in tokens if word not in stop_words or word in important_words]
     
-    return tokens
+    # Add rap-specific features
+    features = []
+    for token in tokens:
+        # Check for repeated words (common in rap)
+        if len(token) > 1 and token[0] == token[1]:
+            features.append('REPEATED')
+        # Check for common rap prefixes/suffixes
+        if token.endswith('in'):
+            features.append('ING_ENDING')
+        if token.startswith('yo'):
+            features.append('YO_PREFIX')
+    
+    return tokens + features
 
-def create_vocabulary(texts, min_freq=5):
+def create_vocabulary(texts, min_freq=3):
     """Create vocabulary from texts with minimum frequency threshold"""
     all_words = []
     for text in tqdm(texts, desc="Creating vocabulary"):
@@ -104,31 +117,46 @@ class LyricsDataset(Dataset):
             'label': torch.tensor(label, dtype=torch.long)
         }
 
+class Attention(nn.Module):
+    def __init__(self, hidden_dim):
+        super(Attention, self).__init__()
+        self.attention = nn.Linear(hidden_dim * 2, 1)
+        
+    def forward(self, lstm_output):
+        attention_weights = torch.softmax(self.attention(lstm_output), dim=1)
+        context = torch.sum(attention_weights * lstm_output, dim=1)
+        return context, attention_weights
+
 class RapClassifier(nn.Module):
-    def __init__(self, vocab_size, embedding_dim=200, hidden_dim=256, num_classes=2):
+    def __init__(self, vocab_size, embedding_dim=300, hidden_dim=512, num_classes=2):
         super(RapClassifier, self).__init__()
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True, bidirectional=True, num_layers=2, dropout=0.3)
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True, bidirectional=True, num_layers=3, dropout=0.4)
+        self.attention = Attention(hidden_dim)
         self.dropout = nn.Dropout(0.5)
+        self.batch_norm = nn.BatchNorm1d(hidden_dim * 2)
         self.fc1 = nn.Linear(hidden_dim * 2, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, num_classes)
         
     def forward(self, x):
         embedded = self.embedding(x)
         lstm_out, _ = self.lstm(embedded)
-        last_hidden = lstm_out[:, -1, :]
-        last_hidden = self.dropout(last_hidden)
-        x = torch.relu(self.fc1(last_hidden))
+        context, _ = self.attention(lstm_out)
+        context = self.batch_norm(context)
+        context = self.dropout(context)
+        x = torch.relu(self.fc1(context))
         x = self.dropout(x)
         logits = self.fc2(x)
         return logits
 
-def train_model(model, train_loader, val_loader, device, num_epochs=10, learning_rate=0.001):
+def train_model(model, train_loader, val_loader, device, num_epochs=20, learning_rate=0.001):
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=2)
+    optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience=3, factor=0.5)
     
     best_val_loss = float('inf')
+    early_stopping_patience = 5
+    early_stopping_counter = 0
     
     for epoch in range(num_epochs):
         model.train()
@@ -144,6 +172,10 @@ def train_model(model, train_loader, val_loader, device, num_epochs=10, learning
             outputs = model(texts)
             loss = criterion(outputs, labels)
             loss.backward()
+            
+            # Gradient clipping
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            
             optimizer.step()
             
             total_loss += loss.item()
@@ -178,9 +210,16 @@ def train_model(model, train_loader, val_loader, device, num_epochs=10, learning
         print(f'Validation Loss: {avg_val_loss:.4f}')
         print(classification_report(all_labels, all_preds))
         
+        # Early stopping
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
+            early_stopping_counter = 0
             torch.save(model.state_dict(), 'best_model.pth')
+        else:
+            early_stopping_counter += 1
+            if early_stopping_counter >= early_stopping_patience:
+                print("Early stopping triggered")
+                break
 
 def predict_rap(lyrics, model, word_to_idx, device):
     """Predict if given lyrics are rap or not"""
