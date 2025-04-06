@@ -147,39 +147,24 @@ def build_model(input_len, total_words):
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
+def sample_with_temperature(preds, temperature=1.0):
+    preds = np.asarray(preds).astype("float64")
+    preds = np.log(preds + 1e-9) / temperature
+    exp_preds = np.exp(preds)
+    preds = exp_preds / np.sum(exp_preds)
+    probas = np.random.multinomial(1, preds, 1)
+    return np.argmax(probas)
 
-def generate_lyrics(seed_text, tokenizer, model, max_sequence_len, num_words_to_generate):
-    output = seed_text
-    current_input = seed_text
-
-    for _ in range(num_words_to_generate):
-        encoded = tokenizer.texts_to_sequences([current_input])[0]
-        encoded = pad_sequences([encoded], maxlen=max_sequence_len, truncating='pre')
-        
-        # Predict probabilities for each word
-        predicted_probs = model.predict(encoded, verbose=0)[0]
-        
-        # Get the index of the word with the highest probability
-        predicted_index = np.argmax(predicted_probs)
-        
-        # Find the corresponding word
-        output_word = ""
-        for word, index in tokenizer.word_index.items():
-            if index == predicted_index:
-                output_word = word
-                break
-        
-        # Append the predicted word to the output
-        output += " " + output_word
-        
-        # Update the current input sequence by appending the predicted word
-        current_input += " " + output_word
-        # Ensure the input sequence doesn't exceed max_sequence_len words
-        current_input_words = current_input.split()
-        if len(current_input_words) > max_sequence_len:
-            current_input = " ".join(current_input_words[-max_sequence_len:])
-            
-    return output
+def generate_lyrics(seed_text, tokenizer, model, length=100, temperature=1.0):
+    result = seed_text.split()
+    for _ in range(length):
+        encoded = tokenizer.texts_to_sequences([" ".join(result[-5:])])[0]
+        encoded = pad_sequences([encoded], maxlen=5, truncating='pre')
+        preds = model.predict(encoded, verbose=0)[0]
+        next_index = sample_with_temperature(preds, temperature)
+        next_word = tokenizer.index_word.get(next_index, "")
+        result.append(next_word)
+    return " ".join(result)
 
 
 if __name__ == "__main__":
@@ -208,7 +193,7 @@ if __name__ == "__main__":
             max_sequence_len = pickle.load(f)
 
         # Generate lyrics
-        generated = generate_lyrics(args.seed_text, tokenizer, model, max_sequence_len, args.length)
+        generated = generate_lyrics(args.seed_text, tokenizer, model, args.length, 1.0)
         print(generated) # Print generated lyrics to stdout
 
     except Exception as e:

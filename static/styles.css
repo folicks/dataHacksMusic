@@ -1,0 +1,169 @@
+:root {
+  --primary-color: #6200ea; /* Purple */
+  --secondary-color: #03dac6; /* Teal */
+  --background-color: #f5f5f7;
+  --text-color: #333333;
+  --card-bg: #ffffff;
+  --accent-color: #ff4081; /* Pink - unused here but kept for potential future use */
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans",
+    "Helvetica Neue", sans-serif;
+  line-height: 1.6;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  padding: 2rem; /* Container-like padding */
+  max-width: 800px; /* Keep content centered and readable */
+  margin: 2rem auto; /* Center the body content area */
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+h1 {
+  color: var(--primary-color);
+  text-align: center;
+  margin-bottom: 2rem;
+  font-weight: 700;
+  font-size: 2.5rem;
+}
+
+h2 {
+  color: var(--primary-color);
+  margin: 1.5rem 0;
+  font-size: 1.5rem;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: var(--card-bg);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  padding: 2rem;
+}
+
+.input-section, .output-section {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  resize: vertical;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.style-selection {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+label {
+  display: block;
+  margin-right: 1rem;
+  font-weight: 500;
+}
+
+select {
+  padding: 0.5rem;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  background-color: white;
+}
+
+button {
+  background-color: var(--secondary-color);
+  color: #333; /* Dark text on light teal works well */
+  padding: 0.8rem 1.5rem;
+  border-radius: 30px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  width: 100%; /* Make button full width */
+  font-size: 1rem;
+  margin-top: 1rem; /* Add some space above the button */
+}
+
+button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 7px 14px rgba(0, 0, 0, 0.15);
+  background-color: #01bfa5; /* Slightly darker teal on hover */
+}
+
+#download-btn {
+  background-color: #28a745;
+  margin-top: 1rem;
+}
+
+#download-btn:hover {
+  background-color: #218838;
+}
+
+audio {
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.hidden {
+  display: none;
+}
+
+#loading {
+  text-align: center;
+  padding: 1rem;
+  font-style: italic;
+  color: #666;
+}
+
+.loading body {
+  cursor: wait;
+}
+
+#visualization-container {
+  width: 100%;
+  height: 200px;
+  margin-top: 1.5rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* Basic responsiveness */
+@media (max-width: 600px) {
+  body {
+    padding: 1rem;
+    margin: 1rem auto;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+  }
+
+  .container {
+    padding: 1.5rem;
+  }
+}
