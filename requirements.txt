@@ -32,3 +32,4 @@ geopandas==0.14.3
 shapely==2.0.3
 pyogrio==0.8.0
 otter-grader==3.1.4
+keras==3.9.2
