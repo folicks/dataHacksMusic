@@ -1,11 +1,11 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, render_template
 import os
 import numpy as np
 import subprocess
 import json
 import random
 
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__, static_folder='static', template_folder='static')
 
 # Sample Drake lyrics for fallback
 DRAKE_LYRICS = [
@@ -102,7 +102,8 @@ def generate():
 
 @app.route('/')
 def home():
-    return send_from_directory(app.static_folder, 'index.html')
+    # Use render_template to process Jinja syntax like url_for
+    return render_template('index.html')
 
 if __name__ == '__main__':
     print("Starting server...")

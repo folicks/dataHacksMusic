@@ -2,12 +2,8 @@
 <html>
 <head>
     <title>Drake Lyrics Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script src="/static/app.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        textarea, input, button { width: 100%; padding: 10px; margin: 10px 0; }
-        #result { white-space: pre-wrap; border: 1px solid #ddd; padding: 10px; min-height: 200px; }
-    </style>
 </head>
 <body>
     <h1>Drake Lyrics Generator</h1>
@@ -15,8 +11,8 @@
         <label for="seed">Seed Text:</label>
         <input type="text" id="seed" value="start">
         
-        <label for="length"><strong>Length (words):</strong></label>
-        <input type="number" id="length" value="100" min="5" max="100" style="font-weight: bold; border: 2px solid #007bff;">
+        <label for="length">Length (words):</label>
+        <input type="number" id="length" value="100" min="5" max="100">
         
         <button type="submit">Generate Lyrics</button>
     </form>
