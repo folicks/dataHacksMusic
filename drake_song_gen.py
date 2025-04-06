@@ -162,17 +162,14 @@ def generate_lyrics(seed_text, tokenizer, model, length=20):
         result.append(next_word)
     return " ".join(result)
 
-# pop_culture_artists = ["Kendrick Lamar", "Drake"]
-generate_lyrics("death time baby", tokenizer, model, length=100)
-
 def main():
     # Define artists to analyze
-    pop_culture_artists = ["Drake", "Kendrick Lamar"]  # Add more artists as needed
+    pop_culture_artists = ["Drake", "Kendrick Lamar"]  
     
     access_token = "NLSQjUEWly7uv5AK1-fwSwXXl0QN9eQSYlJ2DP_0qpCepn1MLaXozB6VSvkqz1qX"
     all_songs = []
     for artist in pop_culture_artists:
-        songs = get_artist_lyrics(access_token, artist, max_songs=5)  # Reduced for testing
+        songs = get_artist_lyrics(access_token, artist, max_songs=5)  
         if isinstance(songs, list):
             all_songs.append(songs)
     
@@ -187,7 +184,7 @@ def main():
     corpus = get_artist_corpus(song_info, "Drake")
     X, y, tokenizer, total_words = prepare_sequences(corpus)
     model = build_model(X.shape[1], total_words)
-    model.fit(X, y, epochs=10, verbose=1)  # Reduced epochs for testing
+    model.fit(X, y, epochs=10, verbose=1)  
     
     # Generate sample lyrics
     generated = generate_lyrics("start", tokenizer, model, length=20)
