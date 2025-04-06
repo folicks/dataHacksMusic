@@ -1,45 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Song Generator</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@magenta/music"></script>
-    <link rel="stylesheet" href="styles.css">
+    <title>Drake Lyrics Generator</title>
+    <script src="app.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        textarea, input, button { width: 100%; padding: 10px; margin: 10px 0; }
+        #result { white-space: pre-wrap; border: 1px solid #ddd; padding: 10px; min-height: 200px; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>AI Song Generator</h1>
+    <h1>Drake Lyrics Generator</h1>
+    <form id="generate-form">
+        <label for="seed">Seed Text:</label>
+        <input type="text" id="seed" value="start">
         
-        <div class="input-section">
-            <textarea id="lyrics-input" placeholder="Enter lyrics for your song (e.g., 'Hello world, this is my first song')"></textarea>
-            
-            <div class="style-selection">
-                <label for="artist-style">Artist Style:</label>
-                <select id="artist-style">
-                    <option value="hiphop">Hip Hop</option>
-                    <option value="rock">Rock</option>
-                    <option value="pop">Pop</option>
-                    <option value="electronic">Electronic</option>
-                </select>
-            </div>
-            
-            <button id="generate-btn">Generate Song</button>
-        </div>
+        <label for="length">Length (words):</label>
+        <input type="number" id="length" value="20" min="5" max="100">
         
-        <div class="output-section">
-            <h2>Generated Song</h2>
-            <div id="loading" class="hidden">Generating song...</div>
-            <div id="player-container" class="hidden">
-                <audio id="audio-player" controls></audio>
-                <button id="download-btn" class="hidden">Download Song</button>
-            </div>
-            <div id="visualization-container"></div>
-        </div>
-    </div>
-
-    <script src="tensor_flow.js"></script>
+        <button type="submit">Generate Lyrics</button>
+    </form>
+    
+    <h2>Generated Lyrics:</h2>
+    <div id="result"></div>
 </body>
 </html>
