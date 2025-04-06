@@ -3,6 +3,17 @@ from bs4 import BeautifulSoup
 import re
 import pandas as pd
 import numpy as np
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.layers import Embedding, LSTM, Dense
+from tensorflow.keras.utils import to_categorical
+import nltk
+import pickle
+import os
+import argparse
+import sys
+from itertools import chain
 
 def get_artist_id(artist_name, access_token):
     url = "https://api.genius.com/search"
@@ -76,8 +87,6 @@ def get_lyrics_from_url(song_url):
     words = [word for word in words if word]  # remove empty strings
 
     return words
-    
-
 
 def get_kendrick_lyrics(access_token, max_songs=5):
     artist_id = get_artist_id("Kendrick Lamar", access_token)
@@ -109,8 +118,6 @@ def get_artist_corpus(df, artist_name):
     artist_lyrics = df[df["Artist"] == artist_name]["Lyrics"].tolist()
     return list(chain.from_iterable(artist_lyrics))
 
-from itertools import chain
-
 def prepare_sequences(corpus, sequence_length=5):
     tokenizer = Tokenizer()
     tokenizer.fit_on_texts([" ".join(corpus)])
@@ -131,9 +138,6 @@ def prepare_sequences(corpus, sequence_length=5):
     return X, y, tokenizer, total_words
 
 
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Embedding, LSTM, Dense
-
 def build_model(input_len, total_words):
     model = Sequential()
     model.add(Embedding(total_words, 64, input_length=input_len))
@@ -144,52 +148,69 @@ def build_model(input_len, total_words):
     return model
 
 
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-import nltk
-import numpy as np
+def generate_lyrics(seed_text, tokenizer, model, max_sequence_len, num_words_to_generate):
+    output = seed_text
+    current_input = seed_text
 
-nltk.download('punkt')
+    for _ in range(num_words_to_generate):
+        encoded = tokenizer.texts_to_sequences([current_input])[0]
+        encoded = pad_sequences([encoded], maxlen=max_sequence_len, truncating='pre')
+        
+        # Predict probabilities for each word
+        predicted_probs = model.predict(encoded, verbose=0)[0]
+        
+        # Get the index of the word with the highest probability
+        predicted_index = np.argmax(predicted_probs)
+        
+        # Find the corresponding word
+        output_word = ""
+        for word, index in tokenizer.word_index.items():
+            if index == predicted_index:
+                output_word = word
+                break
+        
+        # Append the predicted word to the output
+        output += " " + output_word
+        
+        # Update the current input sequence by appending the predicted word
+        current_input += " " + output_word
+        # Ensure the input sequence doesn't exceed max_sequence_len words
+        current_input_words = current_input.split()
+        if len(current_input_words) > max_sequence_len:
+            current_input = " ".join(current_input_words[-max_sequence_len:])
+            
+    return output
 
-def generate_lyrics(seed_text, tokenizer, model, length=20):
-    result = seed_text.split()
-    for _ in range(length):
-        encoded = tokenizer.texts_to_sequences([" ".join(result[-5:])])[0]
-        encoded = pad_sequences([encoded], maxlen=5, truncating='pre')
-        predicted = model.predict(encoded, verbose=0)
-        next_word = tokenizer.index_word[np.argmax(predicted)]
-        result.append(next_word)
-    return " ".join(result)
-
-def main():
-    # Define artists to analyze
-    pop_culture_artists = ["Drake", "Kendrick Lamar"]  
-    
-    access_token = "NLSQjUEWly7uv5AK1-fwSwXXl0QN9eQSYlJ2DP_0qpCepn1MLaXozB6VSvkqz1qX"
-    all_songs = []
-    for artist in pop_culture_artists:
-        songs = get_artist_lyrics(access_token, artist, max_songs=5)  
-        if isinstance(songs, list):
-            all_songs.append(songs)
-    
-    song_list = []
-    for artist_songs in all_songs:
-        for song in artist_songs:
-            song_list.append([song["title"], song["artist"], song["lyrics"]])
-    
-    song_info = pd.DataFrame(song_list, columns=["Song", "Artist", "Lyrics"])
-    
-    # Generate Drake lyrics
-    corpus = get_artist_corpus(song_info, "Drake")
-    X, y, tokenizer, total_words = prepare_sequences(corpus)
-    model = build_model(X.shape[1], total_words)
-    model.fit(X, y, epochs=100, verbose=1)  
-    
-    # Generate sample lyrics
-    generated = generate_lyrics("start", tokenizer, model, length=20)
-    print("\nGenerated Lyrics:")
-    print(generated)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='Generate Drake-style lyrics.')
+    parser.add_argument('seed_text', type=str, help='The starting text for lyric generation.')
+    parser.add_argument('length', type=int, help='The number of words to generate.')
+    parser.add_argument('--model_dir', type=str, default='models', help='Directory containing the saved model and tokenizer.')
+
+    args = parser.parse_args()
+
+    model_path = os.path.join(args.model_dir, 'drake_model.keras')
+    tokenizer_path = os.path.join(args.model_dir, 'tokenizer.pkl')
+    seq_len_path = os.path.join(args.model_dir, 'seq_length.pkl')
+
+    # Check if model files exist
+    if not os.path.exists(model_path) or not os.path.exists(tokenizer_path) or not os.path.exists(seq_len_path):
+        print(f"Error: Model files not found in {args.model_dir}. Please train the model first.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        # Load the model, tokenizer, and sequence length
+        model = load_model(model_path)
+        with open(tokenizer_path, 'rb') as f:
+            tokenizer = pickle.load(f)
+        with open(seq_len_path, 'rb') as f:
+            max_sequence_len = pickle.load(f)
+
+        # Generate lyrics
+        generated = generate_lyrics(args.seed_text, tokenizer, model, max_sequence_len, args.length)
+        print(generated) # Print generated lyrics to stdout
+
+    except Exception as e:
+        print(f"Error during generation: {str(e)}", file=sys.stderr)
+        sys.exit(1)

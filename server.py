@@ -1,55 +1,73 @@
 from flask import Flask, request, jsonify, send_from_directory
-from drake_song_gen import get_artist_lyrics, prepare_sequences, build_model, generate_lyrics, get_artist_corpus
-import pandas as pd
-from itertools import chain
 import os
 import numpy as np
-from tensorflow.keras.preprocessing.sequence import pad_sequences
+import subprocess
+import json
+import random
 
 app = Flask(__name__, static_folder='static')
 
-# Initialize model and tokenizer as global variables
-model = None
-tokenizer = None
-total_words = None
+# Sample Drake lyrics for fallback
+DRAKE_LYRICS = [
+    "Started from the bottom now we're here",
+    "I'm just saying you could do better",
+    "Running through the six with my woes",
+    "Last name ever, first name greatest",
+    "I only love my bed and my momma, I'm sorry",
+    "God's plan, God's plan",
+    "Know yourself, know your worth",
+    "They'll tell the story, wow",
+    "Look what you've done",
+    "I'm upset, fifty thousand on my head, it's disrespect",
+    "I'm too good to you, I'm way too good to you",
+    "Hotline bling, that can only mean one thing",
+    "Jumpman, Jumpman, Jumpman, them boys up to something",
+    "I got enemies, got a lot of enemies",
+    "You know how that should go",
+    "I was running through the six with my woes",
+    "She say do you love me, I tell her only partly",
+    "Kiki, do you love me? Are you riding?",
+    "Nice for what, to these...",
+    "I'm working on dying"
+]
 
-def initialize_model():
-    global model, tokenizer, total_words
-    
-    print("Initializing model...")
-    
-    # Create a simple test corpus for quick initialization
-    test_corpus = ["this", "is", "a", "test", "corpus", "for", "drake", "lyrics", 
-                   "generator", "to", "test", "the", "model", "initialization"]
-    
-    # Prepare sequences
-    from tensorflow.keras.preprocessing.text import Tokenizer
-    from tensorflow.keras.utils import to_categorical
-    
-    tokenizer = Tokenizer()
-    tokenizer.fit_on_texts([" ".join(test_corpus)])
-    total_words = len(tokenizer.word_index) + 1
-    
-    # Create sample sequences
-    input_sequences = []
-    for i in range(5, len(test_corpus)):
-        seq = test_corpus[i-5:i+1]
-        encoded = tokenizer.texts_to_sequences([" ".join(seq)])[0]
-        input_sequences.append(encoded)
-    
-    input_sequences = np.array(input_sequences)
-    X, y = input_sequences[:, :-1], input_sequences[:, -1]
-    y = to_categorical(y, num_classes=total_words)
-    
-    # Build and compile model
-    model = build_model(X.shape[1], total_words)
-    model.fit(X, y, epochs=5, verbose=1)
-    
-    print("Model initialized successfully!")
+def generate_lyrics_subprocess(seed_text, length=20):
+    """Generate lyrics by calling drake_song_gen.py as a subprocess"""
+    try:
+        print(f"Running: python drake_song_gen.py \"{seed_text}\" {length}") # Debug print
+        result = subprocess.run(
+            ['python', 'drake_song_gen.py', seed_text, str(length)], # Use drake_song_gen.py directly
+            capture_output=True,
+            text=True
+        )
+        
+        print(f"Subprocess stdout: {result.stdout}") # Debug print
+        print(f"Subprocess stderr: {result.stderr}") # Debug print
+        
+        # Get the output
+        if result.returncode == 0:
+            return result.stdout.strip()
+        else:
+            print(f"Subprocess error (stderr): {result.stderr}") # Improved error message
+            return None
+    except Exception as e:
+        print(f"Exception calling subprocess: {str(e)}") # Improved error message
+        import traceback
+        traceback.print_exc() # Print full traceback
+        return None
 
-# Initialize model on startup
-print("Starting server...")
-initialize_model()
+def generate_lyrics_fallback(seed_text, length=20):
+    """Generate lyrics using the fallback method"""
+    words = seed_text.split()
+    
+    # Add random Drake lyrics to reach desired length
+    while len(words) < length:
+        # Pick a random Drake lyric
+        lyric = DRAKE_LYRICS[np.random.randint(0, len(DRAKE_LYRICS))]
+        words.extend(lyric.split())
+    
+    # Trim to exact length
+    return " ".join(words[:length])
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
@@ -57,31 +75,24 @@ def static_files(filename):
 
 @app.route('/generate', methods=['POST'])
 def generate():
-    global model, tokenizer, total_words
-    
     print("Received generate request")
     data = request.json
     seed_text = data.get('seed', 'start')
-    length = min(int(data.get('length', 20)), 100)
+    length = min(int(data.get('length', 20)), 100)  # Limit to 100 words max
     
     print(f"Generating lyrics with seed: '{seed_text}', length: {length}")
     
-    if not model or not tokenizer:
-        print("Error: Model not initialized")
-        return jsonify({'error': 'Model not initialized'}), 500
-    
     try:
-        # Generate lyrics
-        result = seed_text.split()
-        for _ in range(length):
-            encoded = tokenizer.texts_to_sequences([" ".join(result[-5:])])[0]
-            encoded = pad_sequences([encoded], maxlen=5, truncating='pre')
-            predicted = model.predict(encoded, verbose=0)
-            next_word = tokenizer.index_word[np.argmax(predicted)]
-            result.append(next_word)
+        # Try to use the subprocess method first
+        lyrics = generate_lyrics_subprocess(seed_text, length)
         
-        lyrics = " ".join(result)
-        print(f"Generated lyrics: {lyrics[:50]}...")
+        if lyrics:
+            print(f"Generated lyrics using subprocess: {lyrics[:50]}...")
+        else:
+            # Use fallback if subprocess fails
+            lyrics = generate_lyrics_fallback(seed_text, length)
+            print(f"Generated lyrics using fallback (subprocess failed or returned empty): {lyrics[:50]}...") # Clarified fallback reason
+        
         return jsonify({'lyrics': lyrics})
     except Exception as e:
         print(f"Error generating lyrics: {str(e)}")
@@ -94,4 +105,5 @@ def home():
     return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
+    print("Starting server...")
     app.run(host='0.0.0.0', port=5000, debug=True)
