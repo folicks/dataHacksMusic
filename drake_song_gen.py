@@ -193,7 +193,7 @@ if __name__ == "__main__":
             max_sequence_len = pickle.load(f)
 
         # Generate lyrics
-        generated = generate_lyrics(args.seed_text, tokenizer, model, max_sequence_len, args.length)
+        generated = generate_lyrics(args.seed_text, tokenizer, model, args.length, 1.0)
         print(generated) # Print generated lyrics to stdout
 
     except Exception as e:
