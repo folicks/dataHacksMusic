@@ -12,11 +12,11 @@ def _():
     import numpy as np
     import seaborn as sns
     import marimo as mo
+    import pandas as pd
 
 
 
-
-    return librosa, mo, np, sns
+    return librosa, mo, np, pd, sns
 
 
 @app.cell
@@ -69,12 +69,10 @@ def _():
     return
 
 
-app._unparsable_cell(
-    r"""
-    can you
-    """,
-    name="_"
-)
+@app.cell
+def _(pd, spectrogram):
+    wav_encoding = pd.DataFrame(spectrogram)
+    return (wav_encoding,)
 
 
 @app.cell
