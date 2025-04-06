@@ -3,6 +3,8 @@ from bs4 import BeautifulSoup
 import re
 import argparse
 import sys
+import json
+import os
 
 def get_artist_id(artist_name, access_token):
     url = "https://api.genius.com/search"
@@ -75,30 +77,19 @@ def get_lyrics_from_url(song_url):
     words = [word for word in words if word]  # remove empty strings
 
     return words
+
+def export_to_json(artist, songs):
+    """Export songs to JSON file with artist name as filename"""
+    output_dir = "lyrics_data"
+    os.makedirs(output_dir, exist_ok=True)
     
-
-
-# def get_kendrick_lyrics(access_token, max_songs=5):
-#     artist_id = get_artist_id("Kendrick Lamar", access_token)
-#     if not artist_id:
-#         return "Artist not found."
-
-#     songs = get_artist_songs(artist_id, access_token, max_songs)
-#     for song in songs:
-#         print(f"Fetching lyrics for: {song['title']}")
-#         lyrics = get_lyrics_from_url(song["url"])
-#         song["lyrics"] = lyrics
-#     return songs
-
-
-# access_token = "NLSQjUEWly7uv5AK1-fwSwXXl0QN9eQSYlJ2DP_0qpCepn1MLaXozB6VSvkqz1qX"
-# kendrick_songs = get_kendrick_lyrics(access_token, max_songs=10)
-
-# for song in kendrick_songs:
-#     print(f"\n{song['title']} ({song['release_date']})\n")
-#     print(song['lyrics'][:500])  # preview first 500 chars
-#     print("...\n" + "-"*80)
-#     print(song["url"])
+    # Create dictionary with song titles as keys
+    songs_dict = {song['title']: song['lyrics'] for song in songs}
+    
+    filename = f"{output_dir}/{artist.lower().replace(' ', '_')}.json"
+    with open(filename, 'w') as f:
+        json.dump(songs_dict, f, indent=2)
+    print(f"Saved {len(songs_dict)} songs to {filename}")
 
 def get_artist_lyrics(access_token, artist, max_songs=5):
     artist_id = get_artist_id(artist, access_token)
@@ -117,6 +108,7 @@ def main():
     parser = argparse.ArgumentParser(description='Fetch lyrics for popular artists')
     parser.add_argument('--artist', help='Artist name to fetch lyrics for')
     parser.add_argument('--list', action='store_true', help='List available artists')
+    parser.add_argument('--all', action='store_true', help='Process all artists and save to JSON')
     args = parser.parse_args()
 
     pop_culture_artists = ["Taylor Swift", "Billie Eilish", "Rihanna", "Ariana Grande", 
@@ -129,13 +121,17 @@ def main():
         sys.exit(0)
         
     access_token = "NLSQjUEWly7uv5AK1-fwSwXXl0QN9eQSYlJ2DP_0qpCepn1MLaXozB6VSvkqz1qX"
-    # all_songs = []
-    # for artist in pop_culture_artists:
-    #     all_songs.append(get_artist_lyrics(access_token, artist, max_songs=2))
-
-    # for thing in all_songs:
-    #     for song in thing:
-    if args.artist:
+    
+    if args.all:
+        for artist in pop_culture_artists:
+            songs = get_artist_lyrics(access_token, artist, max_songs=5)
+            if artist == "Ariana Grande":
+                print(f"\nDebug for {artist}:")
+                print(f"Type of songs: {type(songs)}")
+                if isinstance(songs, list):
+                    print(f"First item type: {type(songs[0]) if len(songs) > 0 else 'empty list'}")
+            export_to_json(artist, songs)
+    elif args.artist:
         if args.artist not in pop_culture_artists:
             print(f"Artist '{args.artist}' not in available list. Use --list to see options.")
             sys.exit(1)
@@ -147,7 +143,7 @@ def main():
             print("...\n" + "-"*80)
             print(song["url"])
     else:
-        print("Please specify an artist with --artist or see available artists with --list")
+        print("Please specify an artist with --artist, use --all to process all artists, or see available artists with --list")
 
 if __name__ == "__main__":
     main()
