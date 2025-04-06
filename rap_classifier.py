@@ -68,7 +68,7 @@ def create_vocabulary(texts, min_freq=5):
         all_words.extend(preprocess_lyrics(text))
     
     word_counts = Counter(all_words)
-    # Filter words that appear less than min_freq times
+    # Filter words that appear less than min_freq times (with an in place histogram)
     vocabulary = {word: idx+1 for idx, (word, count) in enumerate(word_counts.most_common()) if count >= min_freq}
     vocabulary['<unk>'] = 0
     vocabulary['<pad>'] = len(vocabulary)
@@ -109,6 +109,7 @@ class RapClassifier(nn.Module):
         super(RapClassifier, self).__init__()
         self.embedding = nn.Embedding(vocab_size, embedding_dim)
         self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True, bidirectional=True, num_layers=2, dropout=0.3)
+        #  are these the correct "choices"
         self.dropout = nn.Dropout(0.5)
         self.fc1 = nn.Linear(hidden_dim * 2, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, num_classes)
