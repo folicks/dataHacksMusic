@@ -14,7 +14,7 @@ def main():
     all_songs = []
     
     # Get Drake lyrics
-    songs = get_artist_lyrics(access_token, "Drake", max_songs=5)
+    songs = get_artist_lyrics(access_token, "Drake", max_songs=100)
     if isinstance(songs, list):
         all_songs.append(songs)
     
