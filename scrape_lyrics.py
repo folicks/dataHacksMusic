@@ -143,11 +143,11 @@ def main():
         songs = get_artist_lyrics(access_token, args.artist, max_songs=5)
         for song in songs:
             print(f"\n{song['title']} ({song['release_date']})\n")
-        print(song['lyrics'][:500])  # preview first 500 chars
+            print(song['lyrics'][:500])  # preview first 500 chars
             print("...\n" + "-"*80)
             print(song["url"])
-        else:
-            print("Please specify an artist with --artist or see available artists with --list")
+    else:
+        print("Please specify an artist with --artist or see available artists with --list")
 
 if __name__ == "__main__":
     main()
